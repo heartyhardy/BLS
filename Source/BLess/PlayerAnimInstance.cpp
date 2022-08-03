@@ -30,6 +30,9 @@ void UPlayerAnimInstance::NativeInitializeAnimation()
 	PlayerCharacter = Cast<APlayerCharacter>(TryGetPawnOwner());
 }
 
+
+// Turn In Place
+
 void UPlayerAnimInstance::TurnInPlace()
 {
 	if (!PlayerCharacter) return;
@@ -45,7 +48,20 @@ void UPlayerAnimInstance::TurnInPlace()
 	TempYawDiff = YawDelta;
 
 	// Desired Rotation offset between Root Bone and Character Rotation
-	RootYawOffset -= YawDelta;
+	// Clamped to -180 <-> 180
+	RootYawOffset = UKismetMathLibrary::NormalizeAxis(RootYawOffset - YawDelta);
+
+	// Metadata curve returns 1.f if Playing otherwise 0.f
+	const float Turning{ GetCurveValue(TEXT("Turning_Meta")) };
+	if (Turning > 0.f)
+	{
+		RotationCurveLastFrame = RotationCurve;
+		RotationCurve = GetCurveValue(TEXT("Curve_Rotation"));
+		const float DeltaRotation{ RotationCurve - RotationCurveLastFrame };
+
+		// If RootYawOffset > 0 Then we are TURNING LEFT
+		// If RootYawOffset < 0 Then we are Turning RIGHT
+	}
 }
 
 void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)

@@ -70,6 +70,11 @@ private:
 	// Yaw of the character in the Previous Frame
 	float CharacterYawLastFrame;
 
+	// Rotation Curve in Turn-in-place animations
+	float RotationCurve;
+	float RotationCurveLastFrame;
+
+	// REMOVE LATER: DEBUG ONLY
 	float TempYawDiff;
 
 	/** Combat Related */
