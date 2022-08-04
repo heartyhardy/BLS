@@ -140,6 +140,7 @@ void APlayerCharacter::EnterCombatMode()
 	if (!bIsInCombat && bWalkingEnabled)
 	{
 		bIsInCombat = true;
+		UE_LOG(LogTemp, Warning, TEXT("Combat %s"), bIsInCombat ? TEXT("TRUE") : TEXT("FALSE"));
 		bUseControllerRotationYaw = true;
 	}
 }
@@ -151,6 +152,8 @@ void APlayerCharacter::ExitCombatMode()
 	if (bIsInCombat && bWalkingEnabled)
 	{
 		bIsInCombat = false;
+		UE_LOG(LogTemp, Warning, TEXT("Combat %s"), bIsInCombat ? TEXT("TRUE") : TEXT("FALSE"));
+
 		bUseControllerRotationYaw = false;
 	}
 }

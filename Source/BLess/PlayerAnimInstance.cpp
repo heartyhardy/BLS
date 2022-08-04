@@ -36,31 +36,56 @@ void UPlayerAnimInstance::NativeInitializeAnimation()
 void UPlayerAnimInstance::TurnInPlace()
 {
 	if (!PlayerCharacter) return;
-	if (Speed > 0.f) return;
-
-	CharacterYawLastFrame = CharacterYaw;
-	CharacterYaw = PlayerCharacter->GetActorRotation().Yaw;
-
-	// Delta Between Character Yaw: Current - Last
-	const float YawDelta{ CharacterYaw - CharacterYawLastFrame };
-	
-	// REMOVE LATER: DEBUG PURPOSES ONLY!!!
-	TempYawDiff = YawDelta;
-
-	// Desired Rotation offset between Root Bone and Character Rotation
-	// Clamped to -180 <-> 180
-	RootYawOffset = UKismetMathLibrary::NormalizeAxis(RootYawOffset - YawDelta);
-
-	// Metadata curve returns 1.f if Playing otherwise 0.f
-	const float Turning{ GetCurveValue(TEXT("Turning_Meta")) };
-	if (Turning > 0.f)
+	if (Speed > 0.f)
 	{
-		RotationCurveLastFrame = RotationCurve;
-		RotationCurve = GetCurveValue(TEXT("Curve_Rotation"));
-		const float DeltaRotation{ RotationCurve - RotationCurveLastFrame };
+		// VERY IMPORTANT: Reset values! Otherwise they contain fractions of values which can messup movement!!
+		RootYawOffset = 0.f;
+		CharacterYaw = PlayerCharacter->GetActorRotation().Yaw;
+		CharacterYawLastFrame = CharacterYaw;
 
-		// If RootYawOffset > 0 Then we are TURNING LEFT
-		// If RootYawOffset < 0 Then we are Turning RIGHT
+		// Also Reset Curves
+		RotationCurve = 0.f;
+		RotationCurveLastFrame = 0.f;
+	}
+	else
+	{
+		CharacterYawLastFrame = CharacterYaw;
+		CharacterYaw = PlayerCharacter->GetActorRotation().Yaw;
+
+		// Delta Between Character Yaw: Current - Last
+		const float YawDelta{ CharacterYaw - CharacterYawLastFrame };
+
+		// REMOVE LATER: DEBUG PURPOSES ONLY!!!
+		TempYawDiff = YawDelta;
+
+		// Desired Rotation offset between Root Bone and Character Rotation
+		// Clamped to -180 <-> 180
+		RootYawOffset = UKismetMathLibrary::NormalizeAxis(RootYawOffset - YawDelta);
+
+		// Metadata curve returns 1.f if Playing otherwise 0.f
+		const float Turning{ GetCurveValue(TEXT("Turning_Meta")) };
+		if (Turning > 0.f)
+		{
+			RotationCurveLastFrame = RotationCurve;
+			RotationCurve = GetCurveValue(TEXT("Curve_Rotation"));
+			const float DeltaRotation{ RotationCurve - RotationCurveLastFrame };
+
+			// If RootYawOffset > 0 Then we are TURNING LEFT
+			// If RootYawOffset < 0 Then we are Turning RIGHT
+
+			// Turning LEFT and RootBone is Turning Towards Right so Subtract the DeltaRotation
+			// Turning RIGHT and RootBone is Turning Left so Add the DeltaRotation
+			// (Curve returns POSITIVE value(-90.f -> 0.f), DeltaRotation > 0)
+			RootYawOffset > 0.f ? RootYawOffset -= DeltaRotation : RootYawOffset += DeltaRotation;
+
+			const float ABSRootYawOffset{ FMath::Abs(RootYawOffset) };
+			if (ABSRootYawOffset > 90.f)
+			{
+				// Ge the excess amount of YawOffset
+				const float YawExcess{ ABSRootYawOffset - 90.f };
+				RootYawOffset > 0.f ? RootYawOffset -= YawExcess : RootYawOffset += YawExcess;
+			}
+		}
 	}
 }
 
@@ -122,6 +147,7 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 		/** Debug */
 		if (GEngine)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("HasEngine"));
 			FString AimRotationMessage = FString::Printf(TEXT("Base Aim Rotation: %f"), AimRotation.Yaw);
 			GEngine->AddOnScreenDebugMessage(0, 2.f, FColor::Red, AimRotationMessage);
 
@@ -136,6 +162,10 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
 			FString RootYawOffsetMessage = FString::Printf(TEXT("Movement Offset Yaw: %f"), RootYawOffset);
 			GEngine->AddOnScreenDebugMessage(4, 2.f, FColor::Magenta, RootYawOffsetMessage);
+
+			FString CombatModeMessage = FString::Printf(TEXT("Combat Mode: %s"), bIsInCombat ? TEXT("TRUE") : TEXT("FALSE"));
+			GEngine->AddOnScreenDebugMessage(5, 2.f, FColor::Black, CombatModeMessage);
+
 		}
 		
 	}
