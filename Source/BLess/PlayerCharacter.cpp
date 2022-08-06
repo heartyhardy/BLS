@@ -108,8 +108,16 @@ void APlayerCharacter::EnterCombatMode()
 // TEMP: Exit the COMBAT Mode
 void APlayerCharacter::ExitCombatMode()
 {
+
+	// EXPERIMENTAL CODE
+	// Exit Combat Mode when In IDLE
+	FVector Velocity{ GetVelocity() };
+	Velocity.Z = 0;
+
+	float Speed = Velocity.Size();
+
 	// Needs Lerping with a Curve
-	if (bIsInCombat)
+	if (bIsInCombat && Speed == 0.f)
 	{
 		bIsInCombat = false;
 		bUseControllerRotationYaw = false;
