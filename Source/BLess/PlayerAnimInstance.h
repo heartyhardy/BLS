@@ -42,13 +42,6 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = Movement, meta = (AllowPrivateAccess = "true"))
 		bool bIsAccelerating;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = Movement, meta = (AllowPrivateAccess = "true"))
-		bool bWalkingEnabled;
-
-	// Is Acceleration > 0
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = Movement, meta = (AllowPrivateAccess = "true"))
-		bool bIsRunning;
-
 	// Difference between AimRotation and MovementRotation: Offset YAW used for Strafing
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = Movement, meta = (AllowPrivateAccess = "true"))
 		float MovementOffsetYaw;

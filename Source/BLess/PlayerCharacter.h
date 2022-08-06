@@ -40,36 +40,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
 		float BaseLookupRate;
 
-
-	/** Walk/Run Acceleration Rates and Speed */
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
-		bool bWalkingEnabled;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
-		float DefaultMaxAcceleration;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
-		float DefaultMaxWalkSpeed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
-		float WalkAcceleration;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
-		float WalkSpeed;
-
-
-	/** Walk Run Rotation Rates */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
-		float WalkRotationRate;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
-		float RunRotationRate;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
-		bool bIsRunning;
-
-
 	/** Combat Related */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, category = Combat, meta = (AllowPrivateAccess = "true"))
 		bool bIsInCombat;
@@ -80,9 +50,6 @@ protected:
 
 	void MoveForward(float Value);
 	void MoveRight(float Value);
-
-	void Run();
-	void StopRunning();
 	
 	//Note that Rate is normalized
 	void TurnAtRate(float Rate);
@@ -98,10 +65,6 @@ public:
 	// Camera
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-
-	// Movement
-	FORCEINLINE bool IsWalkingEnabled() const { return bWalkingEnabled; }
-	FORCEINLINE bool IsRunning() const { return bIsRunning; }
 
 	// Combat
 	FORCEINLINE bool IsInCombat() const { return bIsInCombat; }

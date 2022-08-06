@@ -11,7 +11,7 @@ UPlayerAnimInstance::UPlayerAnimInstance() :
 	Speed(0.f),
 	bIsInAir(false),
 	bIsAccelerating(false),
-	bIsRunning(false),
+	// Movement Blendspaces
 	MovementOffsetYaw(0.f),
 	LastMovementOffsetYaw(0.f),
 	//Turn In Place
@@ -120,12 +120,6 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 			bIsAccelerating = false;
 		}
 
-		// Is Walking Enabled?
-		bWalkingEnabled = PlayerCharacter->IsWalkingEnabled();
-
-		// Is Character Running?
-		bIsRunning = PlayerCharacter->IsRunning();
-
 		// Get the difference between Aim Rotation and Movement Direction Rotation
 		FRotator AimRotation = PlayerCharacter->GetBaseAimRotation();
 		FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(PlayerCharacter->GetVelocity());
@@ -147,7 +141,6 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 		/** Debug */
 		if (GEngine)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("HasEngine"));
 			FString AimRotationMessage = FString::Printf(TEXT("Base Aim Rotation: %f"), AimRotation.Yaw);
 			GEngine->AddOnScreenDebugMessage(0, 2.f, FColor::Red, AimRotationMessage);
 

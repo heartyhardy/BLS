@@ -11,16 +11,6 @@ APlayerCharacter::APlayerCharacter() :
 	// Turn Rate
 	BaseTurnRate(45.f),
 	BaseLookupRate(45.f),
-	// Movement Defaults
-	bWalkingEnabled(true),
-	bIsRunning(false),
-	DefaultMaxAcceleration(2048.f),
-	DefaultMaxWalkSpeed(600.f),
-	WalkSpeed(200.f),
-	WalkAcceleration(1024.f),
-	// Rotation Rates
-	WalkRotationRate(240.f),
-	RunRotationRate(320.f),
 	// Combat
 	bIsInCombat(false)
 {
@@ -40,7 +30,7 @@ APlayerCharacter::APlayerCharacter() :
 
 	// Disable Controller Rotation for the Character. Camara will still do
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
 	// Rotate the character to the Movement instead of Controller Rotation
@@ -56,14 +46,7 @@ APlayerCharacter::APlayerCharacter() :
 // Called when the game starts or when spawned
 void APlayerCharacter::BeginPlay()
 {
-	Super::BeginPlay();
-
-	// Enable ControllerRotaionYaw if Walking Is DISABLED
-	if (!bWalkingEnabled)
-	{
-		bUseControllerRotationYaw = true;
-	}
-	
+	Super::BeginPlay();	
 }
 
 // Called every frame
@@ -99,28 +82,6 @@ void APlayerCharacter::MoveRight(float Value)
 	}
 }
 
-void APlayerCharacter::Run()
-{
-	if (bWalkingEnabled && GetCharacterMovement()->GetCurrentAcceleration().Size() > 0)
-	{
-		bIsRunning = true;
-		GetCharacterMovement()->MaxAcceleration = DefaultMaxAcceleration;
-		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
-		GetCharacterMovement()->RotationRate.Yaw = RunRotationRate;
-	}
-}
-
-void APlayerCharacter::StopRunning()
-{
-	if (bWalkingEnabled)
-	{
-		bIsRunning = false;
-		GetCharacterMovement()->MaxAcceleration = WalkAcceleration;
-		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
-		GetCharacterMovement()->RotationRate.Yaw = WalkRotationRate;
-	}
-}
-
 // Turn Rate
 void APlayerCharacter::TurnAtRate(float Rate)
 {
@@ -137,10 +98,9 @@ void APlayerCharacter::LookupAtRate(float Rate)
 void APlayerCharacter::EnterCombatMode()
 {
 	// Needs Lerping with a Curve
-	if (!bIsInCombat && bWalkingEnabled)
+	if (!bIsInCombat)
 	{
 		bIsInCombat = true;
-		UE_LOG(LogTemp, Warning, TEXT("Combat %s"), bIsInCombat ? TEXT("TRUE") : TEXT("FALSE"));
 		bUseControllerRotationYaw = true;
 	}
 }
@@ -149,11 +109,9 @@ void APlayerCharacter::EnterCombatMode()
 void APlayerCharacter::ExitCombatMode()
 {
 	// Needs Lerping with a Curve
-	if (bIsInCombat && bWalkingEnabled)
+	if (bIsInCombat)
 	{
 		bIsInCombat = false;
-		UE_LOG(LogTemp, Warning, TEXT("Combat %s"), bIsInCombat ? TEXT("TRUE") : TEXT("FALSE"));
-
 		bUseControllerRotationYaw = false;
 	}
 }
@@ -181,8 +139,6 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Released, this, &ACharacter::StopJumping);
 
-	PlayerInputComponent->BindAction("Run", EInputEvent::IE_Pressed, this, &ThisClass::Run);
-	PlayerInputComponent->BindAction("Run", EInputEvent::IE_Released, this, &ThisClass::StopRunning);
 
 	/** Combat */
 	PlayerInputComponent->BindAction("CombatMode", EInputEvent::IE_Pressed, this, &ThisClass::EnterCombatMode);
