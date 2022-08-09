@@ -15,8 +15,8 @@ UPlayerAnimInstance::UPlayerAnimInstance() :
 	MovementOffsetYaw(0.f),
 	LastMovementOffsetYaw(0.f),
 	//Turn In Place
-	CharacterYaw(0.f),
-	CharacterYawLastFrame(0.f),
+	TIPCharacterYaw(0.f),
+	TIPCharacterYawLastFrame(0.f),
 	RootYawOffset(0.f),
 	// Combat
 	bIsInCombat(false)
@@ -40,8 +40,8 @@ void UPlayerAnimInstance::TurnInPlace()
 	{
 		// VERY IMPORTANT: Reset values! Otherwise they contain fractions of values which can messup movement!!
 		RootYawOffset = 0.f;
-		CharacterYaw = PlayerCharacter->GetActorRotation().Yaw;
-		CharacterYawLastFrame = CharacterYaw;
+		TIPCharacterYaw = PlayerCharacter->GetActorRotation().Yaw;
+		TIPCharacterYawLastFrame = TIPCharacterYaw;
 
 		// Also Reset Curves
 		RotationCurve = 0.f;
@@ -49,11 +49,11 @@ void UPlayerAnimInstance::TurnInPlace()
 	}
 	else
 	{
-		CharacterYawLastFrame = CharacterYaw;
-		CharacterYaw = PlayerCharacter->GetActorRotation().Yaw;
+		TIPCharacterYawLastFrame = TIPCharacterYaw;
+		TIPCharacterYaw = PlayerCharacter->GetActorRotation().Yaw;
 
 		// Delta Between Character Yaw: Current - Last
-		const float YawDelta{ CharacterYaw - CharacterYawLastFrame };
+		const float YawDelta{ TIPCharacterYaw - TIPCharacterYawLastFrame };
 
 		// REMOVE LATER: DEBUG PURPOSES ONLY!!!
 		TempYawDiff = YawDelta;
@@ -87,6 +87,30 @@ void UPlayerAnimInstance::TurnInPlace()
 			}
 		}
 	}
+}
+
+void UPlayerAnimInstance::Lean(float DeltaTime)
+{
+	if (!PlayerCharacter) return;
+
+	CharacterRotationLastFrame = CharacterRotation;
+	CharacterRotation = PlayerCharacter->GetActorRotation();
+
+	const FRotator Delta{ UKismetMathLibrary::NormalizedDeltaRotator(CharacterRotation, CharacterRotationLastFrame) };
+
+	/** Instead of multiplying DeltaTime as usual we are dividing it
+		Reason is CharacterYaw - CharacterYawLastFrame will be larget if we are turning rapidly
+		If we mulp. that with DeltaTime it will be smaller so instead we are Dividing it to increase the output
+	*/
+	const float InterpTarget{ (CharacterYaw - CharacterYawLastFrame) / DeltaTime };
+
+	const float Interp{ FMath::FInterpTo(CharacterYawDelta, InterpTarget, DeltaTime, 6.f) };
+
+	// Clap the YawDelta between -90 and +90
+	CharacterYawDelta = FMath::Clamp(Interp, -90.f, 90.f);
+
+	// DEBUG ONLY
+	TempCharacterYawDelta = CharacterYawDelta;
 }
 
 void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
@@ -150,14 +174,20 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 			FString MovementRotationYawMessage = FString::Printf(TEXT("Movement Offset Yaw: %f"), MovementOffsetYaw);
 			GEngine->AddOnScreenDebugMessage(2, 2.f, FColor::Green, MovementRotationYawMessage);
 
-			FString CharacterYawOffsetMessage = FString::Printf(TEXT("Character Yaw Delta: %f"), TempYawDiff);
+			FString CharacterYawOffsetMessage = FString::Printf(TEXT("TIP Yaw Delta: %f"), TempYawDiff);
 			GEngine->AddOnScreenDebugMessage(3, 2.f, FColor::Cyan, CharacterYawOffsetMessage);
 
 			FString RootYawOffsetMessage = FString::Printf(TEXT("Movement Offset Yaw: %f"), RootYawOffset);
 			GEngine->AddOnScreenDebugMessage(4, 2.f, FColor::Magenta, RootYawOffsetMessage);
 
+			FString CharacterYawMessage = FString::Printf(TEXT("Character Yaw: %f"), CharacterYaw);
+			GEngine->AddOnScreenDebugMessage(5, 2.f, FColor::Turquoise, CharacterYawMessage);
+
+			FString CharacterYawDeltaMessage = FString::Printf(TEXT("Character Yaw Delta: %f"), TempCharacterYawDelta);
+			GEngine->AddOnScreenDebugMessage(6, 2.f, FColor::Turquoise, CharacterYawDeltaMessage);
+
 			FString CombatModeMessage = FString::Printf(TEXT("Combat Mode: %s"), bIsInCombat ? TEXT("TRUE") : TEXT("FALSE"));
-			GEngine->AddOnScreenDebugMessage(5, 2.f, FColor::Black, CombatModeMessage);
+			GEngine->AddOnScreenDebugMessage(7, 2.f, FColor::Black, CombatModeMessage);
 
 		}
 		
@@ -165,4 +195,7 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
 	// This is called here because PlayerCharacter is being null checked within the function
 	TurnInPlace();
+
+	// Call Lean() to update CharacterYawDelta and Interp it
+	Lean(DeltaTime);
 }

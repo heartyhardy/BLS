@@ -57,27 +57,47 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = "Turn In Place", meta = (AllowPrivateAccess = "true"))
 		float RootYawOffset;
 
+	// TIPCharacterYaw and TIPCharacterYawLast Frame are only updated when STANDING STILL!
 	// Yaw of the character for This Frame
-	float CharacterYaw;
+	float TIPCharacterYaw;
 
 	// Yaw of the character in the Previous Frame
-	float CharacterYawLastFrame;
+	float TIPCharacterYawLastFrame;
 
 	// Rotation Curve in Turn-in-place animations
 	float RotationCurve;
 	float RotationCurveLastFrame;
 
-	// REMOVE LATER: DEBUG ONLY
-	float TempYawDiff;
+
+	/** Leaning and Global use of Character Yaw and Yaw Delta */
+	// Character Yaw this frame
+	FRotator CharacterRotation;
+
+	// Character Yaw Last Frame
+	FRotator CharacterRotationLastFrame;
+
+	// Used for Leaning in Running Blendspaces
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = "Lean", meta = (AllowPrivateAccess = "true"))
+		float CharacterYawDelta;
+
 
 	/** Combat Related */
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = Combat, meta = (AllowPrivateAccess = "true"))
 		bool bIsInCombat;
 
+
+	/** DEBUG RELATED */
+	// REMOVE LATER: DEBUG ONLY
+	float TempYawDiff;
+	float TempCharacterYawDelta;
+
 protected:
 
 	// Handle Turn-in-place variables
 	void TurnInPlace();
+
+	// Handle calculations for Leaning while running
+	void Lean(float DeltaTime);
 
 };
