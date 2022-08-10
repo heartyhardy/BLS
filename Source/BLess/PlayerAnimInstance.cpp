@@ -18,6 +18,9 @@ UPlayerAnimInstance::UPlayerAnimInstance() :
 	TIPCharacterYaw(0.f),
 	TIPCharacterYawLastFrame(0.f),
 	RootYawOffset(0.f),
+	// Lean
+	CharacterRotation(FRotator::ZeroRotator),
+	CharacterRotationLastFrame(FRotator::ZeroRotator),
 	// Combat
 	bIsInCombat(false)
 {
@@ -96,15 +99,17 @@ void UPlayerAnimInstance::Lean(float DeltaTime)
 	CharacterRotationLastFrame = CharacterRotation;
 	CharacterRotation = PlayerCharacter->GetActorRotation();
 
+	// Gets difference but normalized rotator
 	const FRotator Delta{ UKismetMathLibrary::NormalizedDeltaRotator(CharacterRotation, CharacterRotationLastFrame) };
 
 	/** Instead of multiplying DeltaTime as usual we are dividing it
-		Reason is CharacterYaw - CharacterYawLastFrame will be larget if we are turning rapidly
+		Reason is CharacterRotation - CharacterRotationLastFrame delta will be larget if we are turning rapidly
 		If we mulp. that with DeltaTime it will be smaller so instead we are Dividing it to increase the output
 	*/
-	const float InterpTarget{ (CharacterYaw - CharacterYawLastFrame) / DeltaTime };
+	// If you use BracedInitialization it will give a conversion error since Delta.Yaw is double
+	const float InterpTarget = Delta.Yaw / DeltaTime ;
 
-	const float Interp{ FMath::FInterpTo(CharacterYawDelta, InterpTarget, DeltaTime, 6.f) };
+	const float Interp = FMath::FInterpTo(CharacterYawDelta, InterpTarget, DeltaTime, 6.f);
 
 	// Clap the YawDelta between -90 and +90
 	CharacterYawDelta = FMath::Clamp(Interp, -90.f, 90.f);
@@ -180,7 +185,7 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 			FString RootYawOffsetMessage = FString::Printf(TEXT("Movement Offset Yaw: %f"), RootYawOffset);
 			GEngine->AddOnScreenDebugMessage(4, 2.f, FColor::Magenta, RootYawOffsetMessage);
 
-			FString CharacterYawMessage = FString::Printf(TEXT("Character Yaw: %f"), CharacterYaw);
+			FString CharacterYawMessage = FString::Printf(TEXT("Character Yaw: %f"), CharacterRotation.Yaw);
 			GEngine->AddOnScreenDebugMessage(5, 2.f, FColor::Turquoise, CharacterYawMessage);
 
 			FString CharacterYawDeltaMessage = FString::Printf(TEXT("Character Yaw Delta: %f"), TempCharacterYawDelta);
