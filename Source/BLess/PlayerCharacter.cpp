@@ -5,16 +5,23 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter() :
 	// Turn Rate
 	BaseTurnRate(45.f),
 	BaseLookupRate(45.f),
+	// Lerping to Combat Mode
+	ActorRotation(FRotator::ZeroRotator),
+	AimRotation(FRotator::ZeroRotator),
+	CurrentYaw(0),
+	CombatModeLerpSpeed(4.f),
+	bLerpingToCombat(false),
 	// Combat
 	bIsInCombat(false)
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Camera Boom: Pulls in towards Character if collides
@@ -35,7 +42,7 @@ APlayerCharacter::APlayerCharacter() :
 
 	// Rotate the character to the Movement instead of Controller Rotation
 	// Character Moves in the Direction of the Input
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->RotationRate = FRotator{ 0.f, 160.f, 0.f };
 
 	// Set Jump Velocity and Air Control
@@ -46,7 +53,7 @@ APlayerCharacter::APlayerCharacter() :
 // Called when the game starts or when spawned
 void APlayerCharacter::BeginPlay()
 {
-	Super::BeginPlay();	
+	Super::BeginPlay();
 }
 
 // Called every frame
@@ -54,6 +61,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	LerpToAimRotation(DeltaTime);
 }
 
 // Move Forward in the controller Foward(x) direction
@@ -85,6 +93,7 @@ void APlayerCharacter::MoveRight(float Value)
 // Turn Rate
 void APlayerCharacter::TurnAtRate(float Rate)
 {
+	if (bLerpingToCombat) return;
 	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
 }
 
@@ -94,15 +103,39 @@ void APlayerCharacter::LookupAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookupRate * GetWorld()->GetDeltaSeconds());
 }
 
+void APlayerCharacter::MouseXTurn(float Rate)
+{
+	if (bLerpingToCombat) return;
+	AddControllerYawInput(Rate * BaseTurnRate  * GetWorld()->GetDeltaSeconds());
+}
+
 // TEMP: Enter the COMBAT mode
 void APlayerCharacter::EnterCombatMode()
 {
-	// Needs Lerping with a Curve
-	if (!bIsInCombat)
+	if (bIsInCombat || bLerpingToCombat) return;
+
+	if (GetCharacterMovement() > 0)
 	{
+		ActorRotation = GetActorRotation();
+		AimRotation = GetBaseAimRotation();
+		CurrentYaw = ActorRotation.Yaw;
+		CombatModeLerpSpeed = FMath::Abs(CurrentYaw - AimRotation.Yaw) > 100.f ? 4.f : 7.f;
+
+		//ActorRotation = FRotator{ 0.f, FMath::Clamp(ActorRotation.Yaw, -170, 170), 0.f};
+		
+		if ((ActorRotation.Yaw - AimRotation.Yaw) > 180.f && ActorRotation.Yaw < 0.f && AimRotation.Yaw < 0.f)
+		{
+			AimRotation = FRotator{ 0.f, 360.f - (AimRotation.Yaw * -1.f), 0.f };
+		}
+		else if ((ActorRotation.Yaw - AimRotation.Yaw) > 180.f && ActorRotation.Yaw < 0.f && AimRotation.Yaw > 0.f)
+		{
+			AimRotation = FRotator{ 0.f, 180.f - (AimRotation.Yaw * -1.f), 0.f };
+		}
+	
+		bLerpingToCombat = true;
 		bIsInCombat = true;
-		bUseControllerRotationYaw = true;
 	}
+	// Needs Lerping with a Curve
 }
 
 // TEMP: Exit the COMBAT Mode
@@ -111,16 +144,39 @@ void APlayerCharacter::ExitCombatMode()
 
 	// EXPERIMENTAL CODE
 	// Exit Combat Mode when In IDLE
-	FVector Velocity{ GetVelocity() };
-	Velocity.Z = 0;
+	//FVector Velocity{ GetVelocity() };
+	//Velocity.Z = 0;
 
-	float Speed = Velocity.Size();
+	//float Speed = Velocity.Size();
 
 	// Needs Lerping with a Curve
-	if (bIsInCombat && Speed == 0.f)
+	if (bIsInCombat && !bLerpingToCombat)
 	{
 		bIsInCombat = false;
 		bUseControllerRotationYaw = false;
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+	}
+}
+
+void APlayerCharacter::LerpToAimRotation(float DeltaTime)
+{
+	if (bLerpingToCombat)
+	{
+		CurrentYaw = FMath::FInterpTo(CurrentYaw, AimRotation.Yaw, DeltaTime, CombatModeLerpSpeed);
+
+		SetActorRotation(FRotator(0, CurrentYaw, 0));
+			
+		if (FMath::Abs(CurrentYaw - AimRotation.Yaw) <= 1.f)
+		{
+			bLerpingToCombat = false;
+			AimRotation = FRotator::ZeroRotator;
+			ActorRotation = FRotator::ZeroRotator;
+			CurrentYaw = 0.f;
+
+
+			GetCharacterMovement()->bOrientRotationToMovement = false;
+			bUseControllerRotationYaw = true;
+		}
 	}
 }
 
@@ -141,7 +197,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAxis("TurnRate", this, &ThisClass::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ThisClass::LookupAtRate);
 
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("Turn", this, &ThisClass::MouseXTurn);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Pressed, this, &ACharacter::Jump);

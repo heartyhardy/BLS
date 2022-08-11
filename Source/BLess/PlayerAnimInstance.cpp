@@ -194,6 +194,12 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 			FString CombatModeMessage = FString::Printf(TEXT("Combat Mode: %s"), bIsInCombat ? TEXT("TRUE") : TEXT("FALSE"));
 			GEngine->AddOnScreenDebugMessage(7, 2.f, FColor::Black, CombatModeMessage);
 
+			FString ActorRotationMessage = FString::Printf(TEXT("Actor Rotation: %f"), PlayerCharacter->GetActorRotation().Yaw);
+			GEngine->AddOnScreenDebugMessage(8, 2.f, FColor::Silver, ActorRotationMessage);
+
+			FString ControllerRotationMessage = FString::Printf(TEXT("Aim Rotation: %f"), PlayerCharacter->GetBaseAimRotation().Yaw);
+			GEngine->AddOnScreenDebugMessage(9, 2.f, FColor::Silver, ControllerRotationMessage);
+
 		}
 		
 	}

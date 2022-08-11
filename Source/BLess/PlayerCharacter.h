@@ -28,6 +28,7 @@ public:
 
 private:
 
+	/** Camera, Lookup and Turn Rates */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = Camera, meta = (AllowPrivateAccess = "true"))
 		class USpringArmComponent* CameraBoom;
 
@@ -39,6 +40,19 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Movement, meta = (AllowPrivateAccess = "true"))
 		float BaseLookupRate;
+
+
+	/**
+		Orienting Character to Combat Mode
+			At the end of the lerping, bUseControllerRotationYaw will be turned ON
+			and bOrientRotationToMovement will be Turned OFF
+	*/
+	FRotator ActorRotation;
+	FRotator AimRotation;
+	float CurrentYaw;
+	float CombatModeLerpSpeed;
+	bool bLerpingToCombat;
+
 
 	/** Combat Related */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -55,10 +69,16 @@ protected:
 	void TurnAtRate(float Rate);
 	void LookupAtRate(float Rate);
 
+	// Note: Mouse Turn is Disabled while Entering Combat mode
+	void MouseXTurn(float Rate);
+
+
 	/** Combat Related */
 
 	void EnterCombatMode();
 	void ExitCombatMode();
+
+	void LerpToAimRotation(float DeltaTime);
 
 public:
 
