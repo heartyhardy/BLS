@@ -15,8 +15,8 @@ APlayerCharacter::APlayerCharacter() :
 	// Lerping to Combat Mode
 	ActorRotation(FRotator::ZeroRotator),
 	AimRotation(FRotator::ZeroRotator),
-	CurrentYaw(0),
-	CombatModeLerpSpeed(4.f),
+	TurnLerpSpeed(4.f),
+	TurnLerpAlpha(0.f),
 	bLerpingToCombat(false),
 	// Combat
 	bIsInCombat(false)
@@ -116,22 +116,24 @@ void APlayerCharacter::EnterCombatMode()
 
 	if (GetCharacterMovement() > 0)
 	{
-		ActorRotation = GetActorRotation();
-		AimRotation = GetBaseAimRotation();
-		CurrentYaw = ActorRotation.Yaw;
-		CombatModeLerpSpeed = FMath::Abs(CurrentYaw - AimRotation.Yaw) > 100.f ? 4.f : 7.f;
+		ActorRotation = GetActorRotation().Quaternion();
+		AimRotation = GetBaseAimRotation().Quaternion();
+		CurrentRotation = AimRotation;
 
-		//ActorRotation = FRotator{ 0.f, FMath::Clamp(ActorRotation.Yaw, -170, 170), 0.f};
-		
-		if ((ActorRotation.Yaw - AimRotation.Yaw) > 180.f && ActorRotation.Yaw < 0.f && AimRotation.Yaw < 0.f)
+		const int8 AngleDiff = (int)ActorRotation.AngularDistance(AimRotation);
+		switch (AngleDiff)
 		{
-			AimRotation = FRotator{ 0.f, 360.f - (AimRotation.Yaw * -1.f), 0.f };
+		case 1:
+			TurnLerpSpeed = 3.f;
+			break;
+		case 2:
+			TurnLerpSpeed = 2.25f;
+			break;
+		case 3:
+			TurnLerpSpeed = 1.75f;
+			break;
 		}
-		else if ((ActorRotation.Yaw - AimRotation.Yaw) > 180.f && ActorRotation.Yaw < 0.f && AimRotation.Yaw > 0.f)
-		{
-			AimRotation = FRotator{ 0.f, 180.f - (AimRotation.Yaw * -1.f), 0.f };
-		}
-	
+
 		bLerpingToCombat = true;
 		bIsInCombat = true;
 	}
@@ -141,14 +143,6 @@ void APlayerCharacter::EnterCombatMode()
 // TEMP: Exit the COMBAT Mode
 void APlayerCharacter::ExitCombatMode()
 {
-
-	// EXPERIMENTAL CODE
-	// Exit Combat Mode when In IDLE
-	//FVector Velocity{ GetVelocity() };
-	//Velocity.Z = 0;
-
-	//float Speed = Velocity.Size();
-
 	// Needs Lerping with a Curve
 	if (bIsInCombat && !bLerpingToCombat)
 	{
@@ -162,20 +156,34 @@ void APlayerCharacter::LerpToAimRotation(float DeltaTime)
 {
 	if (bLerpingToCombat)
 	{
-		CurrentYaw = FMath::FInterpTo(CurrentYaw, AimRotation.Yaw, DeltaTime, CombatModeLerpSpeed);
+		CurrentRotation = FQuat4d::FastLerp(ActorRotation, AimRotation, TurnLerpAlpha);
+		CurrentRotation.Normalize();
 
-		SetActorRotation(FRotator(0, CurrentYaw, 0));
-			
-		if (FMath::Abs(CurrentYaw - AimRotation.Yaw) <= 1.f)
+		// TODO
+		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, 300.f, DeltaTime, TurnLerpSpeed);	
+
+		FRotator CurrentRotator = CurrentRotation.Rotator();		
+		CurrentRotator.Pitch = 0;
+		CurrentRotator.Roll = 0;
+
+		SetActorRotation(CurrentRotator);
+
+		TurnLerpAlpha += FMath::Clamp(TurnLerpSpeed * DeltaTime, 0.f, 1.f);
+
+		// Reset If Alpha is Reached
+		if (TurnLerpAlpha >= 1.f)
 		{
 			bLerpingToCombat = false;
-			AimRotation = FRotator::ZeroRotator;
-			ActorRotation = FRotator::ZeroRotator;
-			CurrentYaw = 0.f;
+			AimRotation = FQuat4d{};
+			ActorRotation = FQuat4d{};
+			CurrentRotation = FQuat4d{};
+			TurnLerpAlpha = 0.f;
 
 
 			GetCharacterMovement()->bOrientRotationToMovement = false;
 			bUseControllerRotationYaw = true;
+			// Todo
+			GetCharacterMovement()->MaxWalkSpeed = 600.f;
 		}
 	}
 }

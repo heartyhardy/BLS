@@ -152,12 +152,30 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 		// Get the difference between Aim Rotation and Movement Direction Rotation
 		FRotator AimRotation = PlayerCharacter->GetBaseAimRotation();
 		FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(PlayerCharacter->GetVelocity());
-		MovementOffsetYaw = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation).Yaw;
+		FRotator DeltaRot = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
+
+		FQuat4d AimRotationQ = PlayerCharacter->GetBaseAimRotation().Quaternion();
+		FQuat4d MovementRotationQ = PlayerCharacter->GetVelocity().ToOrientationQuat();
+		FQuat4d DeltaQ = UKismetMathLibrary::NormalizedDeltaRotator
+		(
+			MovementRotationQ.Rotator(), AimRotationQ.Rotator()
+		).Quaternion();
+		
+		DeltaQ.Normalize();
+
+		DeltaRotatorQ = FMath::QInterpTo(DeltaRotatorQ, DeltaQ, DeltaTime, 15.f);
+		DeltaRotatorQ.Normalize();
+
+		MovementOffsetYaw = DeltaRotatorQ.Rotator().Yaw;
+
+		//MovementOffsetYaw = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation).Yaw;
+		//DeltaRotator = FMath::RInterpTo(DeltaRotator, DeltaRot, DeltaTime, 15.f);
+		//MovementOffsetYaw = DeltaRotator.Yaw;
 
 		// Cache Last MovementOffsetYaw
 		if (PlayerCharacter->GetVelocity().Size() > 0.f)
 		{
-			LastMovementOffsetYaw = MovementOffsetYaw;
+			LastMovementOffsetYaw = MovementOffsetYaw;			
 		}
 
 
@@ -197,8 +215,20 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 			FString ActorRotationMessage = FString::Printf(TEXT("Actor Rotation: %f"), PlayerCharacter->GetActorRotation().Yaw);
 			GEngine->AddOnScreenDebugMessage(8, 2.f, FColor::Silver, ActorRotationMessage);
 
-			FString ControllerRotationMessage = FString::Printf(TEXT("Aim Rotation: %f"), PlayerCharacter->GetBaseAimRotation().Yaw);
-			GEngine->AddOnScreenDebugMessage(9, 2.f, FColor::Silver, ControllerRotationMessage);
+			FString ControllerAimRotationMessage = FString::Printf(TEXT("Aim Rotation: %f"), PlayerCharacter->GetBaseAimRotation().Yaw);
+			GEngine->AddOnScreenDebugMessage(9, 2.f, FColor::Silver, ControllerAimRotationMessage);
+
+			FString ControllerRotationMessage = FString::Printf(TEXT("Control Rotation: %f"), PlayerCharacter->GetControlRotation().Yaw);
+			GEngine->AddOnScreenDebugMessage(10, 2.f, FColor::Silver, ControllerRotationMessage);
+
+			FString DeltaTimeMessage = FString::Printf(TEXT("Delta Time: %f"), GetWorld()->GetDeltaSeconds());
+			GEngine->AddOnScreenDebugMessage(11, 2.f, FColor::Silver, DeltaTimeMessage);
+
+			FString LastMovementOffsetYawMessage = FString::Printf(TEXT("Last Movement offset Yaw: %f"), LastMovementOffsetYaw);
+			GEngine->AddOnScreenDebugMessage(12, 2.f, FColor::Silver, LastMovementOffsetYawMessage);
+
+			FString MovementOffsetYawMessage = FString::Printf(TEXT("Movement offset Yaw: %f"), MovementOffsetYaw);
+			GEngine->AddOnScreenDebugMessage(13, 2.f, FColor::Silver, MovementOffsetYawMessage);
 
 		}
 		

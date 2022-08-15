@@ -47,10 +47,13 @@ private:
 			At the end of the lerping, bUseControllerRotationYaw will be turned ON
 			and bOrientRotationToMovement will be Turned OFF
 	*/
-	FRotator ActorRotation;
-	FRotator AimRotation;
-	float CurrentYaw;
-	float CombatModeLerpSpeed;
+	FQuat4d ActorRotation;
+	FQuat4d AimRotation;
+	FQuat4d CurrentRotation;
+
+	float AimRotationYaw;
+	float TurnLerpSpeed;
+	float TurnLerpAlpha;
 	bool bLerpingToCombat;
 
 

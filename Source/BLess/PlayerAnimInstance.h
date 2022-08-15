@@ -86,6 +86,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = Combat, meta = (AllowPrivateAccess = "true"))
 		bool bIsInCombat;
 
+	// Smooth Lerping Between AimRotation and Movement Rotation in Quats
+	FQuat4d DeltaRotatorQ;
+
 
 	/** DEBUG RELATED */
 	// REMOVE LATER: DEBUG ONLY
