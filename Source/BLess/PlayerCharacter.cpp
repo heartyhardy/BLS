@@ -120,19 +120,10 @@ void APlayerCharacter::EnterCombatMode()
 		AimRotation = GetBaseAimRotation().Quaternion();
 		CurrentRotation = AimRotation;
 
-		const int8 AngleDiff = (int)ActorRotation.AngularDistance(AimRotation);
-		switch (AngleDiff)
-		{
-		case 1:
-			TurnLerpSpeed = 3.f;
-			break;
-		case 2:
-			TurnLerpSpeed = 2.25f;
-			break;
-		case 3:
-			TurnLerpSpeed = 1.75f;
-			break;
-		}
+		// Adjust Turning speed based on the Angular Distance
+		const float AngleDiff = ActorRotation.AngularDistance(AimRotation);
+		TurnLerpSpeed = 5.f - AngleDiff;
+		TurnRunSlowSpeed = AngleDiff;
 
 		bLerpingToCombat = true;
 		bIsInCombat = true;
@@ -159,8 +150,12 @@ void APlayerCharacter::LerpToAimRotation(float DeltaTime)
 		CurrentRotation = FQuat4d::FastLerp(ActorRotation, AimRotation, TurnLerpAlpha);
 		CurrentRotation.Normalize();
 
-		// TODO
-		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, 300.f, DeltaTime, TurnLerpSpeed);	
+		// Reduce move speed
+		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(
+			GetCharacterMovement()->MaxWalkSpeed,
+			600.f/TurnRunSlowSpeed,
+			DeltaTime, TurnRunSlowSpeed * 2.f
+		);
 
 		FRotator CurrentRotator = CurrentRotation.Rotator();		
 		CurrentRotator.Pitch = 0;

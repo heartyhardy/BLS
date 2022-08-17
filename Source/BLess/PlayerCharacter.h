@@ -53,6 +53,7 @@ private:
 
 	float AimRotationYaw;
 	float TurnLerpSpeed;
+	float TurnRunSlowSpeed;
 	float TurnLerpAlpha;
 	bool bLerpingToCombat;
 
