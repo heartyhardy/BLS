@@ -154,7 +154,8 @@ void APlayerCharacter::LerpToAimRotation(float DeltaTime)
 		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(
 			GetCharacterMovement()->MaxWalkSpeed,
 			600.f/TurnRunSlowSpeed,
-			DeltaTime, TurnRunSlowSpeed * 2.f
+			DeltaTime,
+			TurnRunSlowSpeed * 2.f
 		);
 
 		FRotator CurrentRotator = CurrentRotation.Rotator();		
